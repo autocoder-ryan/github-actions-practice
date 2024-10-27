@@ -1,0 +1,43 @@
+# name 필드는 워크플로의 이름을 설정합니다.
+name: Docker Test
+# on 필드는 워크플로를 트리거하는 이벤트를 정의합니다.
+on:
+  # push 이벤트가 main 브랜치에서 발생할 때 워크플로가 실행됩니다.
+  push:
+    branches:
+      - main
+# jobs 필드는 워크플로에서 실행할 작업을 정의합니다.
+jobs:
+  # build 작업을 정의합니다.
+  build:
+    # 이 작업이 실행될 환경을 ubuntu-latest로 설정합니다.
+    runs-on: ubuntu-latest
+    # steps 필드는 작업 내에서 수행할 단계들을 정의합니다.
+    steps:
+    # 첫 번째 단계: 소스 코드를 체크아웃합니다.
+    - name: Checkout code
+      uses: actions/checkout@v3
+    # 두 번째 단계: Python 3.11을 설정합니다.
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.11'
+    # 세 번째 단계: Flask Docker 이미지를 빌드합니다.
+    # Dockerfile을 참조하여 myflask-test라는 이름의 이미지를 생성합니다.
+    - name: Build Flask Docker image
+      run: docker image build -t myflask-test .
+    # 네 번째 단계: 빌드된 Flask Docker 이미지를 컨테이너로 실행합니다.
+    # 컨테이너 이름은 myflask-ac로 지정하고, 포트 매핑을 8001:8001로 설정합니다.
+    - name: Run Flask Docker container
+      run: docker container run -d --name myflask-ac -p 8001:8001 myflask-test
+    # 다섯 번째 단계: Flask 앱을 테스트합니다.
+    # 앱이 시작될 시간을 확보하기 위해 10초간 대기한 후, curl 명령어로 앱이 정상적으로 응답하는지 확인합니다.
+    - name: Test Flask app
+      run: |
+        sleep 10
+        curl http://127.0.0.1:8001
+    # 여섯 번째 단계: 실행 중인 Docker 컨테이너를 중지하고 제거합니다.
+    - name: Stop and remove Docker container
+      run: |
+        docker container stop myflask-ac
+        docker container rm myflask-ac
